@@ -40,6 +40,49 @@ function uriToPath(uri) {
     }
 }
 
+// Optional gnome-terminal profile with exit-action=close, so the window shuts
+// when the script exits instead of showing the "child process exited" banner.
+// Users create it themselves; without it we fall back below.
+const AUTO_CLOSE_PROFILE = "Script Launcher (auto-close)";
+
+// True if a gnome-terminal profile with this visible name exists. Reads
+// dconf through GSettings, so it's cheap enough to check on every run.
+function terminalProfileExists(name) {
+    const source = Gio.SettingsSchemaSource.get_default();
+    if (!source.lookup("org.gnome.Terminal.ProfilesList", true) ||
+        !source.lookup("org.gnome.Terminal.Legacy.Profile", true))
+        return false;
+
+    const ids = new Gio.Settings({ schema_id: "org.gnome.Terminal.ProfilesList" })
+        .get_strv("list");
+    return ids.some(id => new Gio.Settings({
+        schema_id: "org.gnome.Terminal.Legacy.Profile",
+        path: `/org/gnome/terminal/legacy/profiles:/:${id}/`,
+    }).get_string("visible-name") === name);
+}
+
+// Builds the command line that runs `bash <scriptPath>` in a terminal:
+//   1. gnome-terminal with the auto-close profile, if it exists
+//   2. gnome-terminal with the user's default profile
+//   3. whatever terminal Cinnamon is configured to use
+function terminalCommand(scriptPath) {
+    const script = "bash " + GLib.shell_quote(scriptPath);
+
+    if (GLib.find_program_in_path("gnome-terminal")) {
+        const profile = terminalProfileExists(AUTO_CLOSE_PROFILE)
+            ? "--profile=" + GLib.shell_quote(AUTO_CLOSE_PROFILE) + " "
+            : "";
+        return "gnome-terminal " + profile + "-- " + script;
+    }
+
+    const prefs = new Gio.Settings({
+        schema_id: "org.cinnamon.desktop.default-applications.terminal",
+    });
+    const exec = prefs.get_string("exec") || "x-terminal-emulator";
+    const execArg = prefs.get_string("exec-arg") || "-e";
+    return `${exec} ${execArg} ${script}`;
+}
+
 // "open-scripts-folder.sh" -> "Open Scripts Folder" (splits on - and _).
 function scriptLabel(fileName) {
     return fileName
@@ -148,17 +191,9 @@ class ScriptLauncherApplet extends Applet.TextIconApplet {
     // Opens a terminal and runs the given script.
     _runScript(scriptPath) {
         // Run through bash explicitly (works whether or not the script is
-        // chmod +x). Uses a dedicated gnome-terminal profile
-        // ("Script Launcher (auto-close)", set up once via gsettings) with
-        // exit-action=close, so the window closes itself when the script
-        // exits instead of showing the "child process exited" hold banner.
-        // The user's default profile is untouched.
-        const command =
-            'gnome-terminal --profile="Script Launcher (auto-close)" -- bash ' +
-            GLib.shell_quote(scriptPath);
-
+        // chmod +x), in the best terminal available (see terminalCommand).
         try {
-            Util.spawnCommandLine(command);
+            Util.spawnCommandLine(terminalCommand(scriptPath));
         } catch (e) {
             global.logError(e);
             Main.notify(_("Script Launcher"), _("Failed to run script: ") + e.message);

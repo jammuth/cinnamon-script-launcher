@@ -1,0 +1,9 @@
+{
+    "uuid": "script-launcher@jamesa",
+    "name": "Script Launcher",
+    "description": "Click to pick and run a script from a folder of .sh files.",
+    "version": "0.1.0",
+    "cinnamon-version": ["6.6", "6.4"],
+    "max-instances": 10,
+    "icon": "utilities-terminal-symbolic"
+}

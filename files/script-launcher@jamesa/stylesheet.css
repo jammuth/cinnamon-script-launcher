@@ -1,0 +1,12 @@
+/*
+ * Applet stylesheet. Cinnamon loads this automatically if present.
+ * Widgets are St (Shell Toolkit) actors, styled with a CSS subset.
+ *
+ * Apply a class from applet.js with:
+ *     this.actor.add_style_class_name('script-launcher');
+ * or on any St widget you create.
+ */
+
+.script-launcher {
+    /* e.g. spacing: 4px; */
+}

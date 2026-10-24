@@ -1,0 +1,16 @@
+# Personal scripts stay local; only the placeholder is tracked.
+scripts/*
+!scripts/.gitkeep
+
+# Local dev notes / Claude Code context
+CLAUDE.md
+PLAN.md
+.claude/
+
+# Editor and OS clutter
+*.swp
+*~
+.vscode/
+.idea/
+.directory
+.DS_Store

@@ -1,0 +1,13 @@
+{
+    "head1": {
+        "type": "header",
+        "description": "Script Runner"
+    },
+    "scripts-dir": {
+        "type": "filechooser",
+        "default": "",
+        "select-dir": true,
+        "description": "Scripts folder",
+        "tooltip": "Every .sh file in this folder appears in the applet's menu"
+    }
+}
